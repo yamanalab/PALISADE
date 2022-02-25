@@ -118,9 +118,19 @@ if( ${AUTOCONF_VER_LEN} EQUAL 0 )
 	message(SEND_ERROR "Autoconf is not installed.")
 endif()
 
-set(PALISADE_VERSION_MAJOR 1)
-set(PALISADE_VERSION_MINOR 9)
-set(PALISADE_VERSION_PATCH 2)
+option( WITH_INTEL_HEXL "Use Intel HEXL library" OFF)
+
+
+if( ${WITH_INTEL_HEXL} )
+	set(PALISADE_VERSION_MAJOR 1)
+	set(PALISADE_VERSION_MINOR 9)
+	set(PALISADE_VERSION_PATCH 3)
+else()
+	set(PALISADE_VERSION_MAJOR 1)
+	set(PALISADE_VERSION_MINOR 9)
+	set(PALISADE_VERSION_PATCH 2)
+endif()
+
 set(PALISADE_VERSION ${PALISADE_VERSION_MAJOR}.${PALISADE_VERSION_MINOR}.${PALISADE_VERSION_PATCH})
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -223,6 +233,10 @@ include (ExternalProject)
 # third party directories
 set( THIRDPARTYDIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party )
 include_directories( ${THIRDPARTYDIR}/include )
+
+if (WITH_INTEL_HEXL)
+	include(third-party/intel-hexl/intel-hexl.cmake)
+endif()
 
 ### Handle third-party CEREAL
 include_directories( ${THIRDPARTYDIR}/cereal/include )
@@ -403,6 +417,10 @@ endif()
 if("${WITH_TCM}" STREQUAL "Y")
 	set(THIRDPARTYLIBS tcmalloc)
 	set(THIRDPARTYSTATICLIBS tcmalloc_static )
+endif()
+
+if (WITH_INTEL_HEXL)
+	set(THIRDPARTYLIBS "${THIRDPARTYLIBS}" HEXL::hexl )
 endif()
 
 if("${WITH_NTL}" STREQUAL "Y")

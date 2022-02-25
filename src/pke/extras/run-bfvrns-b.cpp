@@ -4,26 +4,26 @@
  *
  * @copyright Copyright (c) 2019, New Jersey Institute of Technology (NJIT)
  * All rights reserved.
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice, this
- * list of conditions and the following disclaimer in the documentation and/or other
- * materials provided with the distribution.
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution. THIS SOFTWARE IS
+ * PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
- /*
+/*
 BFV RNS testing programs
 */
 
@@ -37,142 +37,160 @@ BFV RNS testing programs
 
 #include <random>
 
-typedef std::numeric_limits< double > dbl;
+typedef std::numeric_limits<double> dbl;
 
 using namespace std;
 using namespace lbcrypto;
 
 #include <iterator>
 
-//Poly tests
+// Poly tests
 void SHERun();
 
 int main() {
+  SHERun();
 
-
-	SHERun();
-
-	//cin.get();
-	return 0;
+  // cin.get();
+  return 0;
 }
 
 void SHERun() {
+  int nthreads, tid;
 
-	int nthreads, tid;
+  // Fork a team of threads giving them their own copies of variables
+  // so we can see how many threads we have to work with
+#pragma omp parallel private(nthreads, tid)
+  {
+    /* Obtain thread number */
+    tid = omp_get_thread_num();
 
-	// Fork a team of threads giving them their own copies of variables
-	//so we can see how many threads we have to work with
-    #pragma omp parallel private(nthreads, tid)
-	{
+    /* Only master thread does this */
+    if (tid == 0) {
+      nthreads = omp_get_num_threads();
+      std::cout << "Number of threads = " << nthreads << std::endl;
+    }
+  }
 
-		/* Obtain thread number */
-		tid = omp_get_thread_num();
+  std::cout << "\n===========BENCHMARKING FOR BFVRNS-B===============: "
+            << std::endl;
 
-		/* Only master thread does this */
-		if (tid == 0)
-		{
-			nthreads = omp_get_num_threads();
-			std::cout << "Number of threads = " << nthreads << std::endl;
-		}
-	}
+  std::cout << "\nThis code demonstrates the use of the BFV-RNS scheme for "
+               "basic homomorphic encryption operations. "
+            << std::endl;
+  std::cout
+      << "This code shows how to auto-generate parameters during run-time "
+         "based on desired plaintext moduli and security levels. "
+      << std::endl;
+  std::cout << "In this demonstration we use three input plaintext and show "
+               "how to both add them together and multiply them together. "
+            << std::endl;
 
-	std::cout << "\n===========BENCHMARKING FOR BFVRNS-B===============: " << std::endl;
+  // Generate parameters.
+  double diff, start, finish;
 
-	std::cout << "\nThis code demonstrates the use of the BFV-RNS scheme for basic homomorphic encryption operations. " << std::endl;
-	std::cout << "This code shows how to auto-generate parameters during run-time based on desired plaintext moduli and security levels. " << std::endl;
-	std::cout << "In this demonstration we use three input plaintext and show how to both add them together and multiply them together. " << std::endl;
+  usint ptm = 2;
+  double sigma = 3.2;
+  double rootHermiteFactor = 1.0048;
 
-	//Generate parameters.
-	double diff, start, finish;
+  size_t count = 100;
 
-	usint ptm = 2;
-	double sigma = 3.2;
-	double rootHermiteFactor = 1.0048;
+  // Set Crypto Parameters
+  CryptoContext<DCRTPoly> cryptoContext =
+      CryptoContextFactory<DCRTPoly>::genCryptoContextBFVrnsB(
+          ptm, rootHermiteFactor, sigma, 0, 5, 0, OPTIMIZED, 3, 0, 55);
 
-	size_t count = 100;
+  // enable features that you wish to use
+  cryptoContext->Enable(ENCRYPTION);
+  cryptoContext->Enable(SHE);
 
-	//Set Crypto Parameters
-	CryptoContext<DCRTPoly> cryptoContext = CryptoContextFactory<DCRTPoly>::genCryptoContextBFVrnsB(
-			ptm, rootHermiteFactor, sigma, 0, 5, 0, OPTIMIZED,3,0,55);
+  std::cout << "p = "
+            << cryptoContext->GetCryptoParameters()->GetPlaintextModulus()
+            << std::endl;
+  std::cout << "n = "
+            << cryptoContext->GetCryptoParameters()
+                       ->GetElementParams()
+                       ->GetCyclotomicOrder() /
+                   2
+            << std::endl;
+  std::cout << "log2 q = "
+            << cryptoContext->GetCryptoParameters()
+                   ->GetElementParams()
+                   ->GetModulus()
+                   .GetMSB()
+            << std::endl;
 
-	// enable features that you wish to use
-	cryptoContext->Enable(ENCRYPTION);
-	cryptoContext->Enable(SHE);
+  // Initialize Public Key Containers
+  LPKeyPair<DCRTPoly> keyPair;
 
-	std::cout << "p = " << cryptoContext->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
-	std::cout << "n = " << cryptoContext->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() / 2 << std::endl;
-	std::cout << "log2 q = " << cryptoContext->GetCryptoParameters()->GetElementParams()->GetModulus().GetMSB() << std::endl;
+  ////////////////////////////////////////////////////////////
+  // Perform Key Generation Operation
+  ////////////////////////////////////////////////////////////
 
-	// Initialize Public Key Containers
-	LPKeyPair<DCRTPoly> keyPair;
+  std::cout << "Running key generation (used for source data)..." << std::endl;
 
-	////////////////////////////////////////////////////////////
-	// Perform Key Generation Operation
-	////////////////////////////////////////////////////////////
+  start = currentDateTime();
 
-	std::cout << "Running key generation (used for source data)..." << std::endl;
+  keyPair = cryptoContext->KeyGen();
 
-	start = currentDateTime();
+  finish = currentDateTime();
+  diff = finish - start;
+  cout << "Key generation time: "
+       << "\t" << diff << " ms" << endl;
 
-	keyPair = cryptoContext->KeyGen();
+  if (!keyPair.good()) {
+    std::cout << "Key generation failed!" << std::endl;
+    exit(1);
+  }
 
-	finish = currentDateTime();
-	diff = finish - start;
-	cout << "Key generation time: " << "\t" << diff << " ms" << endl;
+  cryptoContext->EvalMultKeyGen(keyPair.secretKey);
 
-	if( !keyPair.good() ) {
-		std::cout << "Key generation failed!" << std::endl;
-		exit(1);
-	}
+  ////////////////////////////////////////////////////////////
+  // Encode source data
+  ////////////////////////////////////////////////////////////
 
-	cryptoContext->EvalMultKeyGen(keyPair.secretKey);
+  std::vector<int64_t> vectorOfInts1 = {1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0};
+  Plaintext plaintext1 = cryptoContext->MakeCoefPackedPlaintext(vectorOfInts1);
 
-	////////////////////////////////////////////////////////////
-	// Encode source data
-	////////////////////////////////////////////////////////////
+  std::vector<int64_t> vectorOfInts2 = {1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0};
+  Plaintext plaintext2 = cryptoContext->MakeCoefPackedPlaintext(vectorOfInts2);
 
-	std::vector<int64_t> vectorOfInts1 = {1,0,1,0,1,1,1,0,1,1,1,0};
-	Plaintext plaintext1 = cryptoContext->MakeCoefPackedPlaintext(vectorOfInts1);
+  double timeDecrypt(0.0);
+  double timeMult(0.0);
+  double timeRelin(0.0);
 
-	std::vector<int64_t> vectorOfInts2 = {1,1,1,1,1,1,1,0,1,1,1,0};
-	Plaintext plaintext2 = cryptoContext->MakeCoefPackedPlaintext(vectorOfInts2);
+  for (size_t k = 0; k < count; k++) {
+    TimeVar tDecrypt;
+    TimeVar tMult;
+    TimeVar tRelin;
 
-	double timeDecrypt(0.0);
-	double timeMult(0.0);
-	double timeRelin(0.0);
+    auto ciphertext1 = cryptoContext->Encrypt(keyPair.publicKey, plaintext1);
 
-	for (size_t k=0; k < count; k++) {
+    auto ciphertext2 = cryptoContext->Encrypt(keyPair.publicKey, plaintext2);
 
-		TimeVar tDecrypt;
-		TimeVar tMult;
-		TimeVar tRelin;
+    Plaintext plaintextDec1;
+    cryptoContext->Decrypt(keyPair.secretKey, ciphertext1, &plaintextDec1);
 
-		auto ciphertext1 = cryptoContext->Encrypt(keyPair.publicKey, plaintext1);
+    Plaintext plaintextDec2;
+    TIC(tDecrypt);
+    cryptoContext->Decrypt(keyPair.secretKey, ciphertext2, &plaintextDec2);
+    timeDecrypt += TOC_US(tDecrypt);
 
-		auto ciphertext2 = cryptoContext->Encrypt(keyPair.publicKey, plaintext2);
+    TIC(tMult);
+    auto ciphertextMul =
+        cryptoContext->EvalMultNoRelin(ciphertext1, ciphertext2);
+    timeMult += TOC_US(tMult);
 
-		Plaintext plaintextDec1;
-		cryptoContext->Decrypt(keyPair.secretKey, ciphertext1, &plaintextDec1);
+    TIC(tRelin);
+    auto ciphertextMulRelin = cryptoContext->EvalMult(ciphertext1, ciphertext2);
+    timeRelin += TOC_US(tRelin);
+  }
 
-		Plaintext plaintextDec2;
-		TIC(tDecrypt);
-		cryptoContext->Decrypt(keyPair.secretKey, ciphertext2, &plaintextDec2);
-		timeDecrypt+=TOC_US(tDecrypt);
-
-		TIC(tMult);
-		auto ciphertextMul = cryptoContext->EvalMultNoRelin(ciphertext1,ciphertext2);
-		timeMult+=TOC_US(tMult);
-
-		TIC(tRelin);
-		auto ciphertextMulRelin = cryptoContext->EvalMult(ciphertext1,ciphertext2);
-		timeRelin+=TOC_US(tRelin);
-
-	}
-
-	std::cout << "Average decryption time:\t" << timeDecrypt/(1000*count) << " ms" << std::endl;
-	std::cout << "Average multiplication time:\t" << timeMult/(1000*count) << " ms" <<  std::endl;
-	std::cout << "Average relinearization time:\t" << (timeRelin-timeMult)/(1000*count) << " ms" << std::endl;
-	std::cout << "Average multiplication + relinearization time:\t" << timeRelin/(1000*count) << " ms" <<  std::endl;
-
+  std::cout << "Average decryption time:\t" << timeDecrypt / (1000 * count)
+            << " ms" << std::endl;
+  std::cout << "Average multiplication time:\t" << timeMult / (1000 * count)
+            << " ms" << std::endl;
+  std::cout << "Average relinearization time:\t"
+            << (timeRelin - timeMult) / (1000 * count) << " ms" << std::endl;
+  std::cout << "Average multiplication + relinearization time:\t"
+            << timeRelin / (1000 * count) << " ms" << std::endl;
 }
-
